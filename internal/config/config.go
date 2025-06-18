@@ -241,3 +241,70 @@ func SaveConfig(config Config) error {
 	// 파일에 쓰기
 	return os.WriteFile(configFile, data, 0644)
 }
+
+// LoadConfigFromPath는 지정된 경로의 설정 파일을 읽어 Config 구조체로 변환합니다
+func LoadConfigFromPath(configPath string) (Config, error) {
+	// 파일 존재 여부 확인
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		logger.Info("설정 파일이 없어 새로 생성합니다: " + configPath)
+		config := DefaultConfig()
+
+		newKey, err := generateSystemKey()
+		if err != nil {
+			return config, fmt.Errorf("새 설정 파일의 시스템 키 생성 실패: %w", err)
+		}
+		config.LocalKey = newKey
+
+		// 설정 파일 디렉토리 생성
+		configDir := filepath.Dir(configPath)
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return config, fmt.Errorf("설정 디렉토리 생성 실패: %w", err)
+		}
+
+		// 설정 파일 저장
+		data, err := json.MarshalIndent(config, "", "  ")
+		if err != nil {
+			return config, fmt.Errorf("설정 JSON 변환 실패: %w", err)
+		}
+		if err := os.WriteFile(configPath, data, 0644); err != nil {
+			return config, fmt.Errorf("설정 파일 저장 실패: %w", err)
+		}
+
+		return config, nil
+	}
+
+	// 파일이 존재하면 읽기
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return Config{}, err
+	}
+
+	var config Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		// 파싱에 실패하면 기본 설정 반환
+		logger.Error("설정 파일 파싱 실패, 기본 설정값을 사용합니다: " + err.Error())
+		return DefaultConfig(), nil
+	}
+
+	// 키가 없으면 생성하고 저장
+	if config.LocalKey == "" {
+		newKey, err := generateSystemKey()
+		if err != nil {
+			return config, fmt.Errorf("failed to generate system key: %w", err)
+		}
+		config.LocalKey = newKey
+
+		// 새로운 키가 포함된 설정을 저장
+		data, err := json.MarshalIndent(config, "", "  ")
+		if err != nil {
+			return config, fmt.Errorf("설정 JSON 변환 실패: %w", err)
+		}
+		if err := os.WriteFile(configPath, data, 0644); err != nil {
+			return config, fmt.Errorf("설정 파일 저장 실패: %w", err)
+		}
+
+		logger.Info("기존 설정 파일에 키가 없어 새로 생성 후 저장했습니다.")
+	}
+
+	return config, nil
+}
