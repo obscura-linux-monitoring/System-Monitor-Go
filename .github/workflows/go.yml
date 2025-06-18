@@ -24,7 +24,7 @@ jobs:
       run: go build -o bin/system-monitor.exec cmd/system-monitor/main.go
     
     - name: Test
-      run: go test ./test/integration/main_test.go
+      run: sudo go test ./test/integration/main_test.go
       
     - name: Generate release version
       id: release_version
