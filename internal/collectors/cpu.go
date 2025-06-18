@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,17 +16,6 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
-)
-
-// CPU 수집 관련 상수
-const (
-	// 백그라운드 수집 관련 상수
-	defaultCacheDuration       = 3 * time.Second
-	defaultBackgroundSampling  = 500 * time.Millisecond
-	defaultBackgroundFrequency = 2 * time.Second
-
-	// 직접 수집 시 샘플링 시간, 테스트할 때는 직접 수집이 많이 사용됨
-	defaultDirectSampling = 750 * time.Millisecond // 더 길게 설정
 )
 
 type CPUCollector struct {
@@ -104,6 +94,26 @@ func getCPUBaseClockSpeed(modelName string) float64 {
 		}
 	}
 	// 모델명에서 찾을 수 없으면 현재 최소 클럭 속도를 반환
+	return 0
+}
+
+// 안전하게 int 값을 가져오는 헬퍼 함수 추가
+func getIntValueSafely(data map[string]interface{}, key string) int {
+	if value, ok := data[key]; ok && value != nil {
+		if intValue, ok := value.(int); ok {
+			return intValue
+		}
+	}
+	return 0
+}
+
+// 안전하게 float64 값을 가져오는 헬퍼 함수 추가
+func getFloatValueSafely(data map[string]interface{}, key string) float64 {
+	if value, ok := data[key]; ok && value != nil {
+		if floatValue, ok := value.(float64); ok {
+			return floatValue
+		}
+	}
 	return 0
 }
 
@@ -295,33 +305,24 @@ func (c *CPUCollector) Collect() (interface{}, error) {
 		Usage:             percent[0],
 		Temperature:       packageTemp,
 		Cores:             cores,
-		HasVMX:            contains(flags, "vmx"),
-		HasSVM:            contains(flags, "svm"),
-		HasAVX:            contains(flags, "avx"),
-		HasAVX2:           contains(flags, "avx2"),
-		HasNEON:           contains(flags, "neon"),
-		HasSVE:            contains(flags, "sve"),
+		HasVMX:            slices.Contains(flags, "vmx"),
+		HasSVM:            slices.Contains(flags, "svm"),
+		HasAVX:            slices.Contains(flags, "avx"),
+		HasAVX2:           slices.Contains(flags, "avx2"),
+		HasNEON:           slices.Contains(flags, "neon"),
+		HasSVE:            slices.Contains(flags, "sve"),
 		IsHyperthreading:  isHyperthreading,
-		L1CacheSize:       detailedInfo["l1_cache"].(int),
-		L2CacheSize:       detailedInfo["l2_cache"].(int),
-		L3CacheSize:       detailedInfo["l3_cache"].(int),
-		BaseClockSpeed:    detailedInfo["base_clock_speed"].(float64),
-		MaxClockSpeed:     detailedInfo["max_clock_speed"].(float64),
-		MinClockSpeed:     detailedInfo["min_clock_speed"].(float64),
+		L1CacheSize:       getIntValueSafely(detailedInfo, "l1_cache"),
+		L2CacheSize:       getIntValueSafely(detailedInfo, "l2_cache"),
+		L3CacheSize:       getIntValueSafely(detailedInfo, "l3_cache"),
+		BaseClockSpeed:    getFloatValueSafely(detailedInfo, "base_clock_speed"),
+		MaxClockSpeed:     getFloatValueSafely(detailedInfo, "max_clock_speed"),
+		MinClockSpeed:     getFloatValueSafely(detailedInfo, "min_clock_speed"),
 	}
 
 	logger.Info("CPUCollector Collect End")
 	logger.Info("Duration: " + time.Since(start).String())
 	return metrics, nil
-}
-
-func contains(slice []string, str string) bool {
-	for _, v := range slice {
-		if v == str {
-			return true
-		}
-	}
-	return false
 }
 
 func getCPUDetailedInfo() (map[string]interface{}, error) {
