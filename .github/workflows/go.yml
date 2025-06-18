@@ -1,0 +1,47 @@
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.1'
+    
+    - name: Build
+      run: go build -o bin/system-monitor.exec cmd/system-monitor/main.go
+    
+    - name: Test
+      run: go test ./test/integration/main_test.go
+      
+    - name: Generate release version
+      id: release_version
+      run: |
+        echo "VERSION=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+      
+    - name: Create Release
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: release-${{ steps.release_version.outputs.VERSION }}
+        name: Release ${{ steps.release_version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+        files: |
+          bin/system-monitor.exec
+          install.sh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
