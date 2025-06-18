@@ -20,8 +20,11 @@ jobs:
       with:
         go-version: '1.24.1'
     
-    - name: Build
-      run: go build -o bin/system-monitor.exec cmd/system-monitor/main.go
+    - name: Build for AMD64
+      run: GOOS=linux GOARCH=amd64 go build -o bin/system-monitor-amd64.exec cmd/system-monitor/main.go
+    
+    - name: Build for ARM64
+      run: GOOS=linux GOARCH=arm64 go build -o bin/system-monitor-arm64.exec cmd/system-monitor/main.go
     
     - name: Test
       run: sudo go test ./test/integration/main_test.go
@@ -41,7 +44,8 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          bin/system-monitor.exec
+          bin/system-monitor-amd64.exec
+          bin/system-monitor-arm64.exec
           install.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
