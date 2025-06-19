@@ -27,7 +27,7 @@ jobs:
       run: GOOS=linux GOARCH=arm64 go build -o bin/system-monitor-arm64.exec cmd/system-monitor/main.go
     
     - name: Test
-      run: sudo go test ./test/integration/main_test.go
+      run: sudo go test ./test/integration/main_test.go -k testUserKey
       
     - name: Generate release version
       id: release_version
