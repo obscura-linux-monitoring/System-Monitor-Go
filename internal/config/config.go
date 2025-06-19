@@ -86,9 +86,9 @@ type ServiceCollectorSettings struct {
 // DefaultConfig는 기본 설정값을 반환합니다
 func DefaultConfig() Config {
 	return Config{
-		CollectionInterval: 5,
-		SendingInterval:    5,
-		ServerUrl:          "localhost:8080",
+		CollectionInterval: 2,
+		SendingInterval:    2,
+		ServerUrl:          "1.209.148.143:8087",
 		LocalKey:           "",
 		UserKey:            "",
 		Collectors: CollectorSettings{

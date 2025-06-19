@@ -52,7 +52,7 @@ func TestMain(t *testing.T) {
 
 	// 설정 로드
 	appConfig := loadConfig()
-	if appConfig == nil {
+	if appConfig == nil || appConfig.UserKey == "" {
 		t.Fatal("Failed to load config, cannot proceed with tests")
 	}
 	logger.Info("Test Start")

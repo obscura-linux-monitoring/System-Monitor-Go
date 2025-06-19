@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -60,7 +62,28 @@ func loadConfig() *config.Config {
 	return &config
 }
 
+// saveConfigToPath는 주어진 경로에 Config 구조체를 JSON 파일로 저장합니다
+func saveConfigToPath(configPath string, cfg config.Config) error {
+	// 설정 파일 디렉토리 생성 (없을 경우)
+	configDir := filepath.Dir(configPath)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return err
+	}
+
+	// Config 구조체를 JSON으로 변환
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// 파일에 쓰기
+	return os.WriteFile(configPath, data, 0644)
+}
+
 func main() {
+	obscuraKey := flag.String("k", "", "Obscura Key")
+	flag.Parse()
+
 	// 로그 초기화 (실행 파일 기준 경로 사용)
 	execPath, err := os.Executable()
 	if err == nil {
@@ -78,6 +101,28 @@ func main() {
 	appConfig := loadConfig()
 	if appConfig == nil {
 		logger.Error("Failed to load config, cannot proceed")
+		return
+	}
+
+	// obscuraKey 값이 있으면 UserKey에 저장하고 설정 파일 업데이트
+	if *obscuraKey != "" {
+		logger.Info("Obscura Key를 UserKey로 설정합니다")
+		appConfig.UserKey = *obscuraKey
+
+		// 변경된 설정을 config.json 파일에 저장
+		configPath := getConfigPath()
+		if configPath != "" {
+			if err := saveConfigToPath(configPath, *appConfig); err != nil {
+				logger.Error("설정 파일 업데이트 실패: " + err.Error())
+			} else {
+				logger.Info("설정 파일 업데이트 완료: UserKey가 저장되었습니다")
+			}
+		}
+	}
+
+	// obscuraKey가 비어 있고 UserKey도 비어 있으면 실행 중지
+	if *obscuraKey == "" && appConfig.UserKey == "" {
+		logger.Error("Obscura Key가 제공되지 않았습니다")
 		return
 	}
 
