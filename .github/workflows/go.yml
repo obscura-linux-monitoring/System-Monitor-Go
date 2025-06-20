@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     
@@ -21,10 +21,10 @@ jobs:
         go-version: '1.24.1'
     
     - name: Build for AMD64
-      run: GOOS=linux GOARCH=amd64 go build -o bin/system-monitor-amd64.exec cmd/system-monitor/main.go
+      run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/system-monitor-amd64.exec cmd/system-monitor/main.go
     
     - name: Build for ARM64
-      run: GOOS=linux GOARCH=arm64 go build -o bin/system-monitor-arm64.exec cmd/system-monitor/main.go
+      run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/system-monitor-arm64.exec cmd/system-monitor/main.go
     
     - name: Test
       run: sudo go test ./test/integration/main_test.go
