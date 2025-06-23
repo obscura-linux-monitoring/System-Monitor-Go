@@ -72,6 +72,12 @@ func NewContainerCollector(cfg config.DockerCollectorSettings) *ContainerCollect
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		logger.Warn("Docker 클라이언트 생성 실패, Docker가 실행 중인지 확인하세요: " + err.Error())
+		// Docker 클라이언트 생성 실패 시에도 수집기 객체는 반환
+		return &ContainerCollector{
+			dockerClient:    nil,
+			cacheDuration:   time.Duration(cfg.CacheDurationSeconds) * time.Second,
+			updateFrequency: time.Duration(cfg.UpdateFrequencySeconds) * time.Second,
+		}
 	}
 
 	collector := &ContainerCollector{

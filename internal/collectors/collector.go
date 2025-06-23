@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"strconv"
+	"strings"
 	"sync"
 	"system-monitor/internal/common"
 	"system-monitor/internal/config"
@@ -60,7 +61,7 @@ func (mc *MasterCollector) CollectAll(userID string, key string) (*models.System
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	errs := make(chan error, len(mc.collectors))
+	var collectionErrors []string
 
 	for name, collector := range mc.collectors {
 		wg.Add(1)
@@ -70,7 +71,9 @@ func (mc *MasterCollector) CollectAll(userID string, key string) (*models.System
 			data, err := c.Collect()
 			if err != nil {
 				logger.Error("수집기 오류: " + name + ", error: " + err.Error())
-				errs <- err
+				mu.Lock()
+				collectionErrors = append(collectionErrors, name+": "+err.Error())
+				mu.Unlock()
 				return
 			}
 
@@ -100,13 +103,10 @@ func (mc *MasterCollector) CollectAll(userID string, key string) (*models.System
 	}
 
 	wg.Wait()
-	close(errs)
 
-	for err := range errs {
-		if err != nil {
-			logger.Error("메트릭 수집 중 오류 발생: " + err.Error())
-			return nil, err
-		}
+	// 오류가 있는 경우에도 수집된 데이터는 반환
+	if len(collectionErrors) > 0 {
+		logger.Warn("일부 수집기에서 오류 발생: " + strings.Join(collectionErrors, "; "))
 	}
 
 	logger.Info("모든 메트릭 수집 완료, 소요 시간: " + time.Since(start).String())
