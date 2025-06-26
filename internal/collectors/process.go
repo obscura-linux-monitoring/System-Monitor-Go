@@ -9,6 +9,7 @@ import (
 	"system-monitor/internal/models"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
@@ -83,6 +84,13 @@ func (c *ProcessCollector) collectProcessMetrics() ([]models.ProcessInfo, error)
 		return nil, err
 	}
 
+	// CPU 코어 수 확인
+	logicalCores, err := cpu.Counts(true)
+	if err != nil {
+		logger.Error("CPU 코어 수를 가져오는데 실패했습니다: " + err.Error())
+		logicalCores = 1 // 기본값으로 1 설정
+	}
+
 	// 현재 시간 기록
 	currentTime := time.Now()
 
@@ -144,12 +152,17 @@ func (c *ProcessCollector) collectProcessMetrics() ([]models.ProcessInfo, error)
 		}
 		processInfo.CPUTime = cpuTime
 
-		// CPU 사용률 계산
+		// CPU 사용률 계산 - 전체 CPU 기준으로 계산
 		if !isFirstCollection {
 			if prevTime, ok := c.prevCPUTimes[pid]; ok {
-				cpuUsage := (cpuTime - prevTime) / duration * 100.0
-				if cpuUsage >= 0 {
-					processInfo.CPUUsage = cpuUsage
+				// 코어 하나당 사용률 계산
+				cpuUsagePerCore := (cpuTime - prevTime) / duration * 100.0
+                
+				// 전체 CPU 기준으로 변환 (코어 하나당 사용률 / 전체 코어 수)
+				cpuUsageTotal := cpuUsagePerCore / float64(logicalCores)
+                
+				if cpuUsageTotal >= 0 {
+					processInfo.CPUUsage = cpuUsageTotal
 				}
 			}
 		}
