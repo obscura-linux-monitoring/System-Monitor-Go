@@ -72,7 +72,7 @@ func TestMain(t *testing.T) {
 	// 이제 메트릭을 수집합니다.
 	// DiskCollector는 백그라운드에서 수집/계산한 최신 결과를 캐시에서 반환합니다.
 	logger.Info("Performing collection...")
-	metrics, err := masterCollector.CollectAll(appConfig.UserKey, appConfig.LocalKey)
+	metrics, err := masterCollector.CollectAll(appConfig.UserKey, appConfig.LocalKey, appConfig.ExternalIP)
 	if err != nil {
 		t.Fatal("Failed to collect metrics: " + err.Error())
 	}
