@@ -11,6 +11,8 @@ type SystemMetrics struct {
 	USER_ID string `json:"user_id"`
 	// Key는 메트릭스의 고유 식별자입니다
 	Key string `json:"key"`
+	// ExternalIP는 외부 IP 주소를 나타냅니다
+	ExternalIP string `json:"external_ip"`
 	// Timestamp는 메트릭스가 수집된 시간을 나타냅니다
 	Timestamp time.Time `json:"timestamp"`
 	// System은 시스템 기본 정보를 포함합니다

@@ -22,6 +22,7 @@ type MasterCollector struct {
 	metricsQueue common.Queue
 	userKey      string
 	localKey     string
+	externalIP   string
 }
 
 // NewMasterCollector는 새 MasterCollector를 초기화하고 반환합니다.
@@ -32,6 +33,7 @@ func NewMasterCollector(cfg config.Config) *MasterCollector {
 		metricsQueue: common.NewQueue(100),
 		userKey:      cfg.UserKey,
 		localKey:     cfg.LocalKey,
+		externalIP:   cfg.ExternalIP,
 	}
 	mc.AddCollector("system", NewSystemCollector(cfg.Collectors.System))
 	mc.AddCollector("cpu", NewCPUCollector(cfg.Collectors.CPU))
@@ -50,12 +52,13 @@ func (mc *MasterCollector) AddCollector(name string, collector Collector) {
 }
 
 // CollectAll은 등록된 모든 수집기에서 메트릭을 수집합니다.
-func (mc *MasterCollector) CollectAll(userID string, key string) (*models.SystemMetrics, error) {
+func (mc *MasterCollector) CollectAll(userID string, key string, externalIP string) (*models.SystemMetrics, error) {
 	logger.Info("메트릭 수집 시작: userID=" + userID + ", key=" + key)
 	start := time.Now()
 	metrics := &models.SystemMetrics{
 		USER_ID:   userID,
 		Key:       key,
+		ExternalIP: externalIP,
 		Timestamp: time.Now(),
 	}
 
@@ -123,7 +126,7 @@ func (mc *MasterCollector) Start(intervalSeconds int) {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			metrics, err := mc.CollectAll(mc.userKey, mc.localKey)
+			metrics, err := mc.CollectAll(mc.userKey, mc.localKey, mc.externalIP)
 			if err != nil {
 				logger.Error("메트릭 수집 실패: " + err.Error())
 				continue
