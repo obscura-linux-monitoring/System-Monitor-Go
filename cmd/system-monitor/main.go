@@ -13,6 +13,7 @@ import (
 	"system-monitor/internal/config"
 	"system-monitor/internal/logger"
 	"system-monitor/internal/network/client"
+	"system-monitor/internal/utils"
 )
 
 // checkRootPrivileges는 프로그램이 루트 권한으로 실행되고 있는지 확인합니다.
@@ -53,11 +54,34 @@ func loadConfig() *config.Config {
 		return nil
 	}
 
+	// 외부 IP가 없으면 구해서 저장
+	if config.ExternalIP == "" {
+		logger.Info("외부 IP가 설정되지 않아 조회합니다...")
+		externalIP, err := utils.GetExternalIP()
+		if err != nil {
+			logger.Error("외부 IP 조회 실패: " + err.Error())
+			// 외부 IP 조회 실패해도 프로그램은 계속 실행되도록 함
+		} else {
+			config.ExternalIP = externalIP
+			logger.Info("외부 IP 조회 성공: " + externalIP)
+			
+			// 변경된 설정을 파일에 저장
+			if err := saveConfigToPath(configPath, config); err != nil {
+				logger.Error("외부 IP 설정 저장 실패: " + err.Error())
+			} else {
+				logger.Info("외부 IP가 설정 파일에 저장되었습니다")
+			}
+		}
+	} else {
+		logger.Info("기존 외부 IP 사용: " + config.ExternalIP)
+	}
+
 	logger.Info("Config loaded: " + config.ServerUrl)
 	logger.Info("Collection interval: " + strconv.Itoa(config.CollectionInterval))
 	logger.Info("Sending interval: " + strconv.Itoa(config.SendingInterval))
 	logger.Info("Local Key: " + config.LocalKey)
 	logger.Info("User Key: " + config.UserKey)
+	logger.Info("External IP: " + config.ExternalIP)
 
 	return &config
 }

@@ -18,6 +18,7 @@ type Config struct {
 	ServerUrl          string            `json:"serverUrl"`
 	LocalKey           string            `json:"localKey"`
 	UserKey            string            `json:"userKey"`
+	ExternalIP         string            `json:"externalIP"`
 	Collectors         CollectorSettings `json:"collectors"`
 }
 
@@ -91,6 +92,7 @@ func DefaultConfig() Config {
 		ServerUrl:          "1.209.148.143:8087",
 		LocalKey:           "",
 		UserKey:            "",
+		ExternalIP:         "",
 		Collectors: CollectorSettings{
 			CPU: CPUCollectorSettings{
 				CacheDurationSeconds:       3,
