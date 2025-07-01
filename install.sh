@@ -239,3 +239,8 @@ echo "또는 'uninstall-system-monitor' 명령으로 제거할 수 있습니다.
 systemctl status system-monitor
 
 echo "System Monitor 설치가 성공적으로 완료되었습니다!"
+
+# 설치 완료 후 설치 스크립트 삭제
+SCRIPT_PATH="$(readlink -f "$0")"
+echo "설치 스크립트를 삭제합니다: $SCRIPT_PATH"
+rm -f "$SCRIPT_PATH"
